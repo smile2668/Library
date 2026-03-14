@@ -1,54 +1,105 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
-import '../../providers/app_providers.dart';
+import '../../providers/auth_provider.dart';
 
-class AdminLoginScreen extends ConsumerStatefulWidget {
+class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
 
   @override
-  ConsumerState<AdminLoginScreen> createState() => _AdminLoginScreenState();
+  State<AdminLoginScreen> createState() => _AdminLoginScreenState();
 }
 
-class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
+class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final _phoneController = TextEditingController();
   final _otpController = TextEditingController();
-  String? _verificationId;
+  bool _otpSent = false;
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    _otpController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendOtp() async {
+    final phone = _phoneController.text.trim();
+    if (phone.isEmpty) return;
+    await context.read<AuthProvider>().signInWithOtp(phone);
+    if (!mounted) return;
+    final error = context.read<AuthProvider>().errorMessage;
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+    } else {
+      setState(() => _otpSent = true);
+    }
+  }
+
+  Future<void> _verifyOtp() async {
+    final phone = _phoneController.text.trim();
+    final token = _otpController.text.trim();
+    if (phone.isEmpty || token.isEmpty) return;
+    final success = await context.read<AuthProvider>().verifyOtp(phone, token);
+    if (!mounted) return;
+    if (success) {
+      // Pop back to _AppRoot which will redirect to the correct dashboard.
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } else {
+      final error = context.read<AuthProvider>().errorMessage;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error ?? 'OTP verification failed')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final auth = ref.watch(authServiceProvider);
+    final isLoading = context.watch<AuthProvider>().isLoading;
     return Scaffold(
-      appBar: AppBar(title: const Text('Admin Login')),
+      appBar: AppBar(title: const Text('Admin / Staff Login')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(controller: _phoneController, decoration: const InputDecoration(labelText: 'Phone (+91...)')),
+            TextField(
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'Phone number (+91...)',
+                prefixIcon: Icon(Icons.phone),
+              ),
+            ),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: () async {
-                await auth.sendOtp(
-                  phone: _phoneController.text.trim(),
-                  onCodeSent: (id, _) => setState(() => _verificationId = id),
-                  onError: (e) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'OTP failed'))),
-                );
-              },
-              child: const Text('Send OTP'),
+              onPressed: isLoading ? null : _sendOtp,
+              child: isLoading
+                  ? const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Send OTP'),
             ),
-            if (_verificationId != null) ...[
+            if (_otpSent) ...[
               const SizedBox(height: 16),
-              TextField(controller: _otpController, decoration: const InputDecoration(labelText: 'Enter OTP')),
+              TextField(
+                controller: _otpController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Enter OTP',
+                  prefixIcon: Icon(Icons.lock_outline),
+                ),
+              ),
+              const SizedBox(height: 12),
               ElevatedButton(
-                onPressed: () async {
-                  await auth.verifyOtp(verificationId: _verificationId!, otp: _otpController.text.trim());
-                  if (context.mounted) context.go('/admin');
-                },
-                child: const Text('Verify & Login'),
-              )
-            ]
+                onPressed: isLoading ? null : _verifyOtp,
+                child: isLoading
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Verify & Login'),
+              ),
+            ],
           ],
         ),
       ),

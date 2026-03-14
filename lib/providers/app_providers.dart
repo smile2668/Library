@@ -1,22 +1,20 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../services/auth_service.dart';
-import '../services/firestore_service.dart';
 import '../services/notification_service.dart';
-import '../services/storage_service.dart';
+import '../services/supabase_auth_service.dart';
+import '../services/supabase_db_service.dart';
+import '../services/supabase_storage_service.dart';
 
-final firebaseAuthProvider = Provider<FirebaseAuth>((_) => FirebaseAuth.instance);
-final firestoreProvider = Provider<FirebaseFirestore>((_) => FirebaseFirestore.instance);
-final storageProvider = Provider<FirebaseStorage>((_) => FirebaseStorage.instance);
-final messagingProvider = Provider<FirebaseMessaging>((_) => FirebaseMessaging.instance);
+/// Central registry for all service singletons.
+/// Services are lazily initialized on first access, ensuring Supabase
+/// is already initialized before any service is used.
+class AppProviders {
+  AppProviders._();
 
-final authServiceProvider = Provider<AuthService>((ref) => AuthService(ref.watch(firebaseAuthProvider)));
-final firestoreServiceProvider =
-    Provider<FirestoreService>((ref) => FirestoreService(ref.watch(firestoreProvider)));
-final storageServiceProvider = Provider<StorageService>((ref) => StorageService(ref.watch(storageProvider)));
-final notificationServiceProvider =
-    Provider<NotificationService>((ref) => NotificationService(ref.watch(messagingProvider)));
+  static SupabaseClient get client => Supabase.instance.client;
+
+  static late final SupabaseAuthService authService = SupabaseAuthService();
+  static late final SupabaseDbService dbService = SupabaseDbService(client);
+  static late final SupabaseStorageService storageService = SupabaseStorageService();
+  static late final NotificationService notificationService = NotificationService();
+}

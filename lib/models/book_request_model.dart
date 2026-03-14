@@ -11,24 +11,41 @@ class BookRequestModel {
     required this.libraryId,
     required this.studentId,
     required this.bookName,
-    required this.imageUrl,
-    required this.status,
+    this.imageUrl = '',
+    this.status = 'Pending',
   });
 
   Map<String, dynamic> toMap() => {
-        'libraryId': libraryId,
-        'studentId': studentId,
-        'bookName': bookName,
-        'imageUrl': imageUrl,
+        'library_id': libraryId,
+        'student_id': studentId,
+        'book_name': bookName,
+        'image_url': imageUrl,
         'status': status,
       };
 
   factory BookRequestModel.fromMap(String id, Map<String, dynamic> map) => BookRequestModel(
         id: id,
-        libraryId: map['libraryId'] as String? ?? '',
-        studentId: map['studentId'] as String? ?? '',
-        bookName: map['bookName'] as String? ?? '',
-        imageUrl: map['imageUrl'] as String? ?? '',
+        libraryId: map['library_id'] as String? ?? map['libraryId'] as String? ?? '',
+        studentId: map['student_id'] as String? ?? map['studentId'] as String? ?? '',
+        bookName: map['book_name'] as String? ?? map['bookName'] as String? ?? '',
+        imageUrl: map['image_url'] as String? ?? map['imageUrl'] as String? ?? '',
         status: map['status'] as String? ?? 'Pending',
+      );
+
+  BookRequestModel copyWith({
+    String? id,
+    String? libraryId,
+    String? studentId,
+    String? bookName,
+    String? imageUrl,
+    String? status,
+  }) =>
+      BookRequestModel(
+        id: id ?? this.id,
+        libraryId: libraryId ?? this.libraryId,
+        studentId: studentId ?? this.studentId,
+        bookName: bookName ?? this.bookName,
+        imageUrl: imageUrl ?? this.imageUrl,
+        status: status ?? this.status,
       );
 }

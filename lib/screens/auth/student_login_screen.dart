@@ -1,65 +1,105 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
-import '../../models/library_model.dart';
-import '../../providers/app_providers.dart';
+import '../../providers/auth_provider.dart';
 
-class StudentLoginScreen extends ConsumerStatefulWidget {
+class StudentLoginScreen extends StatefulWidget {
   const StudentLoginScreen({super.key});
 
   @override
-  ConsumerState<StudentLoginScreen> createState() => _StudentLoginScreenState();
+  State<StudentLoginScreen> createState() => _StudentLoginScreenState();
 }
 
-class _StudentLoginScreenState extends ConsumerState<StudentLoginScreen> {
-  final _searchController = TextEditingController();
+class _StudentLoginScreenState extends State<StudentLoginScreen> {
   final _phoneController = TextEditingController();
-  final _passwordController = TextEditingController();
-  LibraryModel? _selected;
+  final _otpController = TextEditingController();
+  bool _otpSent = false;
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    _otpController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendOtp() async {
+    final phone = _phoneController.text.trim();
+    if (phone.isEmpty) return;
+    await context.read<AuthProvider>().signInWithOtp(phone);
+    if (!mounted) return;
+    final error = context.read<AuthProvider>().errorMessage;
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+    } else {
+      setState(() => _otpSent = true);
+    }
+  }
+
+  Future<void> _verifyOtp() async {
+    final phone = _phoneController.text.trim();
+    final token = _otpController.text.trim();
+    if (phone.isEmpty || token.isEmpty) return;
+    final success = await context.read<AuthProvider>().verifyOtp(phone, token);
+    if (!mounted) return;
+    if (success) {
+      // Pop back to _AppRoot which will redirect to the correct dashboard.
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } else {
+      final error = context.read<AuthProvider>().errorMessage;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error ?? 'OTP verification failed')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final fs = ref.watch(firestoreServiceProvider);
+    final isLoading = context.watch<AuthProvider>().isLoading;
     return Scaffold(
       appBar: AppBar(title: const Text('Student Login')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(labelText: 'Search library by name'),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: StreamBuilder<List<LibraryModel>>(
-                stream: fs.searchLibraries(_searchController.text),
-                builder: (context, snapshot) {
-                  final items = snapshot.data ?? [];
-                  return ListView.builder(
-                    itemCount: items.length,
-                    itemBuilder: (context, i) {
-                      final lib = items[i];
-                      return RadioListTile<LibraryModel>(
-                        value: lib,
-                        groupValue: _selected,
-                        title: Text(lib.name),
-                        onChanged: (v) => setState(() => _selected = v),
-                      );
-                    },
-                  );
-                },
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'Registered mobile number (+91...)',
+                prefixIcon: Icon(Icons.phone),
               ),
             ),
-            TextField(controller: _phoneController, decoration: const InputDecoration(labelText: 'Registered Mobile Number')),
-            TextField(controller: _passwordController, obscureText: true, decoration: const InputDecoration(labelText: 'Password')),
             const SizedBox(height: 12),
-            FilledButton(
-              onPressed: _selected == null ? null : () => context.go('/student'),
-              child: const Text('Login as Student'),
+            ElevatedButton(
+              onPressed: isLoading ? null : _sendOtp,
+              child: isLoading
+                  ? const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Send OTP'),
             ),
+            if (_otpSent) ...[
+              const SizedBox(height: 16),
+              TextField(
+                controller: _otpController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Enter OTP',
+                  prefixIcon: Icon(Icons.lock_outline),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: isLoading ? null : _verifyOtp,
+                child: isLoading
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Verify & Login'),
+              ),
+            ],
           ],
         ),
       ),

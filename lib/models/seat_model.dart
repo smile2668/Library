@@ -14,17 +14,32 @@ class SeatModel {
   });
 
   Map<String, dynamic> toMap() => {
-        'libraryId': libraryId,
+        'library_id': libraryId,
         'number': number,
         'occupied': occupied,
-        'studentId': studentId,
+        'student_id': studentId,
       };
 
   factory SeatModel.fromMap(String id, Map<String, dynamic> map) => SeatModel(
         id: id,
-        libraryId: map['libraryId'] as String? ?? '',
+        libraryId: map['library_id'] as String? ?? map['libraryId'] as String? ?? '',
         number: map['number'] as int? ?? 0,
         occupied: map['occupied'] as bool? ?? false,
-        studentId: map['studentId'] as String?,
+        studentId: map['student_id'] as String? ?? map['studentId'] as String?,
+      );
+
+  SeatModel copyWith({
+    String? id,
+    String? libraryId,
+    int? number,
+    bool? occupied,
+    String? studentId,
+  }) =>
+      SeatModel(
+        id: id ?? this.id,
+        libraryId: libraryId ?? this.libraryId,
+        number: number ?? this.number,
+        occupied: occupied ?? this.occupied,
+        studentId: studentId ?? this.studentId,
       );
 }
