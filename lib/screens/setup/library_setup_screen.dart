@@ -75,7 +75,7 @@ class _LibrarySetupScreenState extends State<LibrarySetupScreen> {
       final imageUrls = <String>[];
       for (int i = 0; i < _libraryImages.length; i++) {
         final url = await AppProviders.storageService.uploadImage(
-          bucket: AppConstants.bucketLibraryImages, path: '$libraryId/image_\${i}.jpg', file: _libraryImages[i]);
+          bucket: AppConstants.bucketLibraryImages, path: '$libraryId/image_$i.jpg', file: _libraryImages[i]);
         imageUrls.add(url);
       }
 

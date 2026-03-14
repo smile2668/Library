@@ -198,7 +198,7 @@ class _StaffFormSheetState extends State<_StaffFormSheet> {
       if (_photoFile != null) {
         final id = widget.existing?.id ?? const Uuid().v4();
         photoUrl = await AppProviders.storageService.uploadImage(
-          AppConstants.bucketStudentPhotos, 'staff/$id/photo.jpg', _photoFile!);
+          bucket: AppConstants.bucketStaffPhotos, path: 'staff/$id/photo.jpg', file: _photoFile!);
       }
       final staff = StaffModel(
         id: widget.existing?.id ?? const Uuid().v4(),

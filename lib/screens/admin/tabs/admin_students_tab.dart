@@ -294,7 +294,7 @@ class _StudentFormSheetState extends State<_StudentFormSheet> {
       if (_photoFile != null) {
         final id = widget.existing?.id ?? const Uuid().v4();
         photoUrl = await AppProviders.storageService.uploadImage(
-          AppConstants.bucketStudentPhotos, '$id/photo.jpg', _photoFile!);
+          bucket: AppConstants.bucketStudentPhotos, path: '$id/photo.jpg', file: _photoFile!);
       }
       final student = StudentModel(
         id: widget.existing?.id ?? const Uuid().v4(),
