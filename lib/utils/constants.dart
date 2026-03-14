@@ -24,6 +24,7 @@ class AppConstants {
   // Storage buckets
   static const bucketLibraryImages = 'library_images';
   static const bucketStudentPhotos = 'student_photos';
+  static const bucketStaffPhotos = 'staff_photos';
   static const bucketAadharImages = 'aadhar_images';
   static const bucketBookImages = 'book_images';
   static const bucketNotesFiles = 'notes_files';
